@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -6,54 +7,82 @@ class Program
 {
     static void Main()
     {
-        Console.OutputEncoding = Encoding.UTF8; // Permitir caracteres Unicode en la consola
-        Console.ForegroundColor = ConsoleColor.Cyan; // Cambia el color del texto
-        Console.WriteLine("🔐  SISTEMA DE ENCRIPTACIÓN RSA CON C# PUNTOS EXTRA 🔐\n");
+        Console.OutputEncoding = Encoding.UTF8;
+        Console.WriteLine("📄 🔐 === SISTEMA DE ENCRIPTACIÓN PARA LICITACIONES === 🔐 📄\n");
 
-        // Generar las claves RSA
-        using RSACryptoServiceProvider rsa = new(2048);
-        string publicKey = rsa.ToXmlString(false);
-        string privateKey = rsa.ToXmlString(true);
+        string inputFilePath = "licitacion.txt";
+        string encryptedFilePath = "licitacion_encrypted.txt";
 
-        Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine("🗝️ Clave Pública:\n" + publicKey + "\n");
-        Console.WriteLine("🔏 Clave Privada:\n" + privateKey + "\n");
+        //clave AES y un IV (vector de inicialización)
+        using Aes aes = Aes.Create();
+        aes.KeySize = 256;
+        aes.GenerateKey();
+        aes.GenerateIV();
+        byte[] aesKey = aes.Key;
+        byte[] aesIV = aes.IV;
 
-        // Solicitar el mensaje a encriptar
-        Console.ForegroundColor = ConsoleColor.White;
-        Console.Write("Introduce el mensaje a encriptar: ");
-        string originalMessage = Console.ReadLine() ?? string.Empty;
+        Console.WriteLine("🔑 Clave AES Generada: " + Convert.ToBase64String(aesKey));
+        Console.WriteLine("🛠️ IV Generado: " + Convert.ToBase64String(aesIV) + "\n");
 
-        // Encriptar el mensaje
-        byte[] encryptedMessage = EncryptRSA(originalMessage, publicKey);
-        string encryptedMessageBase64 = Convert.ToBase64String(encryptedMessage);
+        //Leer el contenido del archivo a encriptar
+        if (!File.Exists(inputFilePath))
+        {
+            Console.WriteLine("⚠️ El archivo 'licitacion.txt' no existe. Creando archivo de prueba...");
+            File.WriteAllText(inputFilePath, "Este es el contenido de la licitación confidencial.");
+        }
+        string fileContent = File.ReadAllText(inputFilePath);
+        Console.WriteLine("📄 Contenido Original del Archivo:\n" + fileContent + "\n");
 
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine("\n🔒 Mensaje Encriptado (Base64): " + encryptedMessageBase64);
+        //Cifrar el contenido del archivo con AES
+        byte[] encryptedContent = EncryptAES(fileContent, aesKey, aesIV);
 
-        // Desencriptar el mensaje
-        string decryptedMessage = DecryptRSA(encryptedMessage, privateKey);
-        Console.ForegroundColor = ConsoleColor.Magenta;
-        Console.WriteLine("\n🔓 Mensaje Desencriptado: " + decryptedMessage);
+        //Guardar el contenido encriptado en un archivo
+        try
+        {
+            File.WriteAllBytes(encryptedFilePath, encryptedContent);
+            Console.WriteLine("✅ Archivo encriptado guardado en 'licitacion_encrypted.txt'.\n");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error al guardar el archivo encriptado: {ex.Message}");
+        }
 
-        Console.ResetColor(); 
+        //Mostrar el contenido encriptado en Base64 (para verificar)
+        Console.WriteLine("🛠️ Contenido Encriptado en Base64:\n" + Convert.ToBase64String(encryptedContent) + "\n");
+
+        //Probar la desencriptación para verificar
+        string decryptedFileContent = DecryptAES(encryptedContent, aesKey, aesIV);
+        Console.WriteLine("\n🔓 Contenido Desencriptado del Archivo:\n" + decryptedFileContent);
     }
 
-    // Encriptar con RSA
-    static byte[] EncryptRSA(string message, string publicKey)
+    //encriptar con AES
+    static byte[] EncryptAES(string plainText, byte[] key, byte[] iv)
     {
-        using RSACryptoServiceProvider rsa = new(2048);
-        rsa.FromXmlString(publicKey);
-        byte[] data = Encoding.UTF8.GetBytes(message);
-        return rsa.Encrypt(data, false);
+        using Aes aes = Aes.Create();
+        aes.Key = key;
+        aes.IV = iv;
+
+        using MemoryStream ms = new();
+        using CryptoStream cs = new(ms, aes.CreateEncryptor(), CryptoStreamMode.Write);
+        using StreamWriter sw = new(cs);
+
+        sw.Write(plainText);
+        sw.Flush();
+        cs.FlushFinalBlock();
+        return ms.ToArray();
     }
 
-    // Desencriptar con RSA
-    static string DecryptRSA(byte[] encryptedMessage, string privateKey)
+    //simulacion equisd  desencriptar con AES
+    static string DecryptAES(byte[] cipherText, byte[] key, byte[] iv)
     {
-        using RSACryptoServiceProvider rsa = new(2048);
-        rsa.FromXmlString(privateKey);
-        byte[] decryptedData = rsa.Decrypt(encryptedMessage, false);
-        return Encoding.UTF8.GetString(decryptedData);
+        using Aes aes = Aes.Create();
+        aes.Key = key;
+        aes.IV = iv;
+
+        using MemoryStream ms = new(cipherText);
+        using CryptoStream cs = new(ms, aes.CreateDecryptor(), CryptoStreamMode.Read);
+        using StreamReader sr = new(cs);
+
+        return sr.ReadToEnd();
     }
 }
