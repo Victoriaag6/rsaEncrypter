@@ -28,6 +28,7 @@ class Program
 
         // Leer el contenido del archivo
         string fileContent = File.ReadAllText(inputFilePath, Encoding.UTF8);
+        Console.WriteLine("📄 Contenido del Archivo Antes de Encriptar:\n" + fileContent + "\n");
 
         // Generar clave AES y IV
         using Aes aes = Aes.Create();
@@ -37,7 +38,7 @@ class Program
         byte[] aesKey = aes.Key;
         byte[] aesIV = aes.IV;
 
-        Console.WriteLine("🔑 Clave Privada (AES):\n" + Convert.ToBase64String(aesKey)+"\n");
+        Console.WriteLine("🔑 Clave Privada (AES):\n" + Convert.ToBase64String(aesKey) + "\n");
         Console.WriteLine("IV Generado: " + Convert.ToBase64String(aesIV) + "\n");
 
         // Cifrar el archivo con AES
