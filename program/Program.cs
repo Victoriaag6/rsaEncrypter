@@ -37,7 +37,7 @@ class Program
         byte[] aesKey = aes.Key;
         byte[] aesIV = aes.IV;
 
-        Console.WriteLine("🔑 Clave AES Generada: " + Convert.ToBase64String(aesKey));
+        Console.WriteLine("🔑 Clave Privada (AES):\n" + Convert.ToBase64String(aesKey)+"\n");
         Console.WriteLine("IV Generado: " + Convert.ToBase64String(aesIV) + "\n");
 
         // Cifrar el archivo con AES
