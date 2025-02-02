@@ -8,12 +8,28 @@ class Program
     static void Main()
     {
         Console.OutputEncoding = Encoding.UTF8;
-        Console.WriteLine("📄 🔐 === SISTEMA DE ENCRIPTACIÓN PARA LICITACIONES === 🔐 📄\n");
+        Console.WriteLine("📄 🔐 SISTEMA DE ENCRIPTACIÓN PARA LICITACIONES 🔐 📄\n");
 
+        // Rutas de los archivos
         string inputFilePath = "licitacion.txt";
         string encryptedFilePath = "licitacion_encrypted.txt";
+        string encryptedKeyFilePath = "aes_key_encrypted.txt";
 
-        //clave AES y un IV (vector de inicialización)
+        // Escribir contenido al archivo
+        try
+        {
+            File.WriteAllText(inputFilePath, "funciona 20 seguro mis amores", Encoding.UTF8);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error al escribir en el archivo: {ex.Message}");
+            return;
+        }
+
+        // Leer el contenido del archivo
+        string fileContent = File.ReadAllText(inputFilePath, Encoding.UTF8);
+
+        // Generar clave AES y IV
         using Aes aes = Aes.Create();
         aes.KeySize = 256;
         aes.GenerateKey();
@@ -22,21 +38,12 @@ class Program
         byte[] aesIV = aes.IV;
 
         Console.WriteLine("🔑 Clave AES Generada: " + Convert.ToBase64String(aesKey));
-        Console.WriteLine("🛠️ IV Generado: " + Convert.ToBase64String(aesIV) + "\n");
+        Console.WriteLine("IV Generado: " + Convert.ToBase64String(aesIV) + "\n");
 
-        //Leer el contenido del archivo a encriptar
-        if (!File.Exists(inputFilePath))
-        {
-            Console.WriteLine("⚠️ El archivo 'licitacion.txt' no existe. Creando archivo de prueba...");
-            File.WriteAllText(inputFilePath, "Este es el contenido de la licitación confidencial.");
-        }
-        string fileContent = File.ReadAllText(inputFilePath);
-        Console.WriteLine("📄 Contenido Original del Archivo:\n" + fileContent + "\n");
-
-        //Cifrar el contenido del archivo con AES
+        // Cifrar el archivo con AES
         byte[] encryptedContent = EncryptAES(fileContent, aesKey, aesIV);
 
-        //Guardar el contenido encriptado en un archivo
+        // Guardar el contenido encriptado en un archivo
         try
         {
             File.WriteAllBytes(encryptedFilePath, encryptedContent);
@@ -45,17 +52,33 @@ class Program
         catch (Exception ex)
         {
             Console.WriteLine($"❌ Error al guardar el archivo encriptado: {ex.Message}");
+            return;
         }
 
-        //Mostrar el contenido encriptado en Base64 (para verificar)
-        Console.WriteLine("🛠️ Contenido Encriptado en Base64:\n" + Convert.ToBase64String(encryptedContent) + "\n");
+        // Generar claves RSA
+        using RSACryptoServiceProvider rsa = new(2048);
+        string publicKey = rsa.ToXmlString(false); // Clave pública
+        string privateKey = rsa.ToXmlString(true); // Clave privada
 
-        //Probar la desencriptación para verificar
-        string decryptedFileContent = DecryptAES(encryptedContent, aesKey, aesIV);
-        Console.WriteLine("\n🔓 Contenido Desencriptado del Archivo:\n" + decryptedFileContent);
+        Console.WriteLine("🗝️ Clave Pública (RSA):\n" + publicKey + "\n");
+
+        // Encriptar la clave AES con la clave pública de RSA
+        byte[] encryptedAESKey = EncryptRSA(aesKey, publicKey);
+
+        // Guardar la clave AES encriptada en un archivo
+        try
+        {
+            File.WriteAllBytes(encryptedKeyFilePath, encryptedAESKey);
+            Console.WriteLine("✅ Clave AES encriptada guardada en 'aes_key_encrypted.txt'.\n");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error al guardar la clave AES encriptada: {ex.Message}");
+            return;
+        }
     }
 
-    //encriptar con AES
+    // Método para encriptar con AES
     static byte[] EncryptAES(string plainText, byte[] key, byte[] iv)
     {
         using Aes aes = Aes.Create();
@@ -72,17 +95,11 @@ class Program
         return ms.ToArray();
     }
 
-    //simulacion equisd  desencriptar con AES
-    static string DecryptAES(byte[] cipherText, byte[] key, byte[] iv)
+    // Método para encriptar con RSA (usa la clave pública del servidor)
+    static byte[] EncryptRSA(byte[] data, string publicKey)
     {
-        using Aes aes = Aes.Create();
-        aes.Key = key;
-        aes.IV = iv;
-
-        using MemoryStream ms = new(cipherText);
-        using CryptoStream cs = new(ms, aes.CreateDecryptor(), CryptoStreamMode.Read);
-        using StreamReader sr = new(cs);
-
-        return sr.ReadToEnd();
+        using RSACryptoServiceProvider rsa = new(2048);
+        rsa.FromXmlString(publicKey);
+        return rsa.Encrypt(data, false);
     }
 }
