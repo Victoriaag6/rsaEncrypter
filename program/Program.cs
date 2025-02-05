@@ -5,40 +5,52 @@ using System.Text;
 
 class Program
 {
-    static void Main()
+    static void Main(string[] args)
     {
-        Console.OutputEncoding = Encoding.UTF8;
-        Console.WriteLine("📄 🔐 SISTEMA DE ENCRIPTACIÓN PARA LICITACIONES 🔐 📄\n");
-
-        // Rutas de los archivos
-        string inputFilePath = "licitacion.txt";
-        string encryptedFilePath = "licitacion_encrypted.txt";
-        string encryptedKeyFilePath = "aes_key_encrypted.txt";
-
-        // Escribir contenido al archivo
-        try
+        if (args.Length < 3)
         {
-            File.WriteAllText(inputFilePath, "funciona 20 seguro mis amores", Encoding.UTF8);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ Error al escribir en el archivo: {ex.Message}");
+            Console.WriteLine("❌ Por favor, proporciona la ruta del archivo de entrada, la ruta del archivo de la clave AES y la ruta del archivo de la clave pública RSA como argumentos.");
             return;
         }
 
+        string inputFilePath = args[0];
+        string aesKeyFilePath = args[1];
+        string publicKeyFilePath = args[2];
+        string encryptedFilePath = "licitacion_encrypted.bin";
+        string encryptedKeyFilePath = "aes_key_encrypted.bin";
+
+        Console.OutputEncoding = Encoding.UTF8;
+        Console.WriteLine("📄 🔐 SISTEMA DE ENCRIPTACIÓN PARA LICITACIONES 🔐 📄\n");
+
         // Leer el contenido del archivo
-        string fileContent = File.ReadAllText(inputFilePath, Encoding.UTF8);
+        string fileContent;
+        try
+        {
+            fileContent = File.ReadAllText(inputFilePath, Encoding.UTF8);
+            Console.WriteLine(fileContent);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error al leer el archivo: {ex.Message}");
+            return;
+        }
         Console.WriteLine("📄 Contenido del Archivo Antes de Encriptar:\n" + fileContent + "\n");
 
-        // Generar clave AES y IV
-        using Aes aes = Aes.Create();
-        aes.KeySize = 256;
-        aes.GenerateKey();
-        aes.GenerateIV();
-        byte[] aesKey = aes.Key;
-        byte[] aesIV = aes.IV;
+        // Leer la clave AES desde el archivo
+        byte[] aesKey;
+        try
+        {
+            aesKey = Convert.FromBase64String(File.ReadAllText(aesKeyFilePath));
+            Console.WriteLine("🔑 Clave Privada (AES) leída desde el archivo.\n");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error al leer la clave AES: {ex.Message}");
+            return;
+        }
 
-        Console.WriteLine("🔑 Clave Privada (AES):\n" + Convert.ToBase64String(aesKey) + "\n");
+        // Generar IV
+        byte[] aesIV = GenerateAESIV();
         Console.WriteLine("IV Generado: " + Convert.ToBase64String(aesIV) + "\n");
 
         // Cifrar el archivo con AES
@@ -56,12 +68,18 @@ class Program
             return;
         }
 
-        // Generar claves RSA
-        using RSACryptoServiceProvider rsa = new(2048);
-        string publicKey = rsa.ToXmlString(false); // Clave pública
-        string privateKey = rsa.ToXmlString(true); // Clave privada
-
-        Console.WriteLine("🗝️ Clave Pública (RSA):\n" + publicKey + "\n");
+        // Leer la clave pública RSA desde el archivo
+        string publicKey;
+        try
+        {
+            publicKey = File.ReadAllText(publicKeyFilePath);
+            Console.WriteLine("🗝️ Clave Pública (RSA) leída desde el archivo.\n");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error al leer la clave pública RSA: {ex.Message}");
+            return;
+        }
 
         // Encriptar la clave AES con la clave pública de RSA
         byte[] encryptedAESKey = EncryptRSA(aesKey, publicKey);
@@ -77,6 +95,14 @@ class Program
             Console.WriteLine($"❌ Error al guardar la clave AES encriptada: {ex.Message}");
             return;
         }
+    }
+
+    // Método para generar IV
+    static byte[] GenerateAESIV()
+    {
+        using Aes aes = Aes.Create();
+        aes.GenerateIV();
+        return aes.IV;
     }
 
     // Método para encriptar con AES

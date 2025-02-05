@@ -1,25 +1,32 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Wes Hughes\\OneDrive - Lead and Prosper\\Desktop\\rsa\\program\\program.csproj": {}
+    "C:\\Users\\Victoria\\Desktop\\URU\\11vo trimestre\\seguridad informatica\\rsaEncrypter\\program\\program.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Wes Hughes\\OneDrive - Lead and Prosper\\Desktop\\rsa\\program\\program.csproj": {
+    "C:\\Users\\Victoria\\Desktop\\URU\\11vo trimestre\\seguridad informatica\\rsaEncrypter\\program\\program.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Wes Hughes\\OneDrive - Lead and Prosper\\Desktop\\rsa\\program\\program.csproj",
+        "projectUniqueName": "C:\\Users\\Victoria\\Desktop\\URU\\11vo trimestre\\seguridad informatica\\rsaEncrypter\\program\\program.csproj",
         "projectName": "program",
-        "projectPath": "C:\\Users\\Wes Hughes\\OneDrive - Lead and Prosper\\Desktop\\rsa\\program\\program.csproj",
-        "packagesPath": "C:\\Users\\Wes Hughes\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Wes Hughes\\OneDrive - Lead and Prosper\\Desktop\\rsa\\program\\obj\\",
+        "projectPath": "C:\\Users\\Victoria\\Desktop\\URU\\11vo trimestre\\seguridad informatica\\rsaEncrypter\\program\\program.csproj",
+        "packagesPath": "C:\\Users\\Victoria\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Victoria\\Desktop\\URU\\11vo trimestre\\seguridad informatica\\rsaEncrypter\\program\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\Wes Hughes\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\Victoria\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
