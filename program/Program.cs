@@ -3,130 +3,115 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
-class Program
+public class AesEncryptor
 {
-    static void Main(string[] args)
+    // Method to generate an AES key
+    public static byte[] GenerateAesKey(int keySize = 256)
     {
-        if (args.Length < 3)
+        using (Aes aes = Aes.Create())
         {
-            Console.WriteLine("❌ Por favor, proporciona la ruta del archivo de entrada, la ruta del archivo de la clave AES y la ruta del archivo de la clave pública RSA como argumentos.");
-            return;
-        }
-
-        string inputFilePath = args[0];
-        string aesKeyFilePath = args[1];
-        string publicKeyFilePath = args[2];
-        string encryptedFilePath = "licitacion_encrypted.bin";
-        string encryptedKeyFilePath = "aes_key_encrypted.bin";
-
-        Console.OutputEncoding = Encoding.UTF8;
-        Console.WriteLine("📄 🔐 SISTEMA DE ENCRIPTACIÓN PARA LICITACIONES 🔐 📄\n");
-
-        // Leer el contenido del archivo
-        string fileContent;
-        try
-        {
-            fileContent = File.ReadAllText(inputFilePath, Encoding.UTF8);
-            Console.WriteLine(fileContent);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ Error al leer el archivo: {ex.Message}");
-            return;
-        }
-        Console.WriteLine("📄 Contenido del Archivo Antes de Encriptar:\n" + fileContent + "\n");
-
-        // Leer la clave AES desde el archivo
-        byte[] aesKey;
-        try
-        {
-            aesKey = Convert.FromBase64String(File.ReadAllText(aesKeyFilePath));
-            Console.WriteLine("🔑 Clave Privada (AES) leída desde el archivo.\n");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ Error al leer la clave AES: {ex.Message}");
-            return;
-        }
-
-        // Generar IV
-        byte[] aesIV = GenerateAESIV();
-        Console.WriteLine("IV Generado: " + Convert.ToBase64String(aesIV) + "\n");
-
-        // Cifrar el archivo con AES
-        byte[] encryptedContent = EncryptAES(fileContent, aesKey, aesIV);
-
-        // Guardar el contenido encriptado en un archivo
-        try
-        {
-            File.WriteAllBytes(encryptedFilePath, encryptedContent);
-            Console.WriteLine("✅ Archivo encriptado guardado en 'licitacion_encrypted.txt'.\n");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ Error al guardar el archivo encriptado: {ex.Message}");
-            return;
-        }
-
-        // Leer la clave pública RSA desde el archivo
-        string publicKey;
-        try
-        {
-            publicKey = File.ReadAllText(publicKeyFilePath);
-            Console.WriteLine("🗝️ Clave Pública (RSA) leída desde el archivo.\n");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ Error al leer la clave pública RSA: {ex.Message}");
-            return;
-        }
-
-        // Encriptar la clave AES con la clave pública de RSA
-        byte[] encryptedAESKey = EncryptRSA(aesKey, publicKey);
-
-        // Guardar la clave AES encriptada en un archivo
-        try
-        {
-            File.WriteAllBytes(encryptedKeyFilePath, encryptedAESKey);
-            Console.WriteLine("✅ Clave AES encriptada guardada en 'aes_key_encrypted.txt'.\n");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ Error al guardar la clave AES encriptada: {ex.Message}");
-            return;
+            aes.KeySize = keySize;
+            aes.GenerateKey();
+            return aes.Key;
         }
     }
 
-    // Método para generar IV
-    static byte[] GenerateAESIV()
+    // Method to encrypt a file using AES
+    public static byte[] EncryptFileWithAes(string filePath, byte[] aesKey, out byte[] iv)
     {
-        using Aes aes = Aes.Create();
-        aes.GenerateIV();
-        return aes.IV;
+        using (Aes aes = Aes.Create())
+        {
+            aes.Key = aesKey;
+            aes.GenerateIV();
+            iv = aes.IV;
+
+            using (FileStream inputFileStream = new FileStream(filePath, FileMode.Open))
+            using (MemoryStream outputMemoryStream = new MemoryStream())
+            using (CryptoStream cryptoStream = new CryptoStream(outputMemoryStream, aes.CreateEncryptor(), CryptoStreamMode.Write))
+            {
+                inputFileStream.CopyTo(cryptoStream);
+                cryptoStream.FlushFinalBlock();
+                return outputMemoryStream.ToArray();
+            }
+        }
     }
 
-    // Método para encriptar con AES
-    static byte[] EncryptAES(string plainText, byte[] key, byte[] iv)
+    // Method to encrypt the AES key using RSA
+    public static byte[] EncryptAesKeyWithRsa(byte[] aesKey, RSA rsa)
     {
-        using Aes aes = Aes.Create();
-        aes.Key = key;
-        aes.IV = iv;
-
-        using MemoryStream ms = new();
-        using CryptoStream cs = new(ms, aes.CreateEncryptor(), CryptoStreamMode.Write);
-        using StreamWriter sw = new(cs);
-
-        sw.Write(plainText);
-        sw.Flush();
-        cs.FlushFinalBlock();
-        return ms.ToArray();
+        return rsa.Encrypt(aesKey, RSAEncryptionPadding.OaepSHA256);
     }
 
-    // Método para encriptar con RSA (usa la clave pública del servidor)
-    static byte[] EncryptRSA(byte[] data, string publicKey)
+    // Method to load an RSA public key from a .pem file
+    public static RSA LoadPublicKeyFromPem(string pemFilePath)
     {
-        using RSACryptoServiceProvider rsa = new(2048);
-        rsa.FromXmlString(publicKey);
-        return rsa.Encrypt(data, false);
+        string pemContent = File.ReadAllText(pemFilePath);
+        byte[] publicKeyBytes = Convert.FromBase64String(pemContent
+            .Replace("-----BEGIN RSA PUBLIC KEY-----", "")
+            .Replace("-----END RSA PUBLIC KEY-----", "")
+            .Replace("\n", "")
+            .Replace("\r", ""));
+        RSA rsa = RSA.Create();
+        rsa.ImportRSAPublicKey(publicKeyBytes, out _);
+        return rsa;
+    }
+}
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        if (args.Length > 0 && args[0] == "aes-key")
+        {
+            // Generate the AES key
+            byte[] aesKey = AesEncryptor.GenerateAesKey();
+            Console.WriteLine("Generated AES Key (Base64): " + Convert.ToBase64String(aesKey));
+
+            // Save the AES key to a .bin file
+            string aesKeyFilePath = Path.Combine(Directory.GetCurrentDirectory(), "aesKey.bin");
+            File.WriteAllBytes(aesKeyFilePath, aesKey);
+            Console.WriteLine("AES Key saved to: " + aesKeyFilePath);
+        }
+        else if (args.Length > 2 && args[0] == "encrypt")
+         {
+            // Encrypt the file using AES and encrypt the AES key with RSA
+            string filePath = args[1];
+            string publicKeyPath = args[2];
+            string aesKeyPath = args[3];
+        
+            // Read AES key from .bin file
+            byte[] aesKey = File.ReadAllBytes(aesKeyPath);
+            byte[] iv;
+        
+            // Encrypt the file with AES
+            byte[] encryptedFileData = AesEncryptor.EncryptFileWithAes(filePath, aesKey, out iv);
+        
+            // Encrypt the AES key with RSA
+            using (RSA rsa = AesEncryptor.LoadPublicKeyFromPem(publicKeyPath))
+            {
+                byte[] encryptedAesKey = AesEncryptor.EncryptAesKeyWithRsa(aesKey, rsa);
+                Console.WriteLine(encryptedAesKey.ToString());
+                // Save the encrypted file and encrypted AES key
+                string outputFilePath = Path.ChangeExtension(filePath, ".bin");
+                Console.WriteLine("Encrypted file path:"  + outputFilePath);
+                File.WriteAllBytes(outputFilePath, encryptedFileData);
+        
+                string encryptedKeyFilePath = Path.Combine(Path.GetDirectoryName(filePath) ?? string.Empty, Path.GetFileNameWithoutExtension(filePath) + "AesKey.bin");
+                File.WriteAllBytes(encryptedKeyFilePath, encryptedAesKey);
+        
+                string ivFilePath = Path.ChangeExtension(filePath, ".iv");
+                File.WriteAllBytes(ivFilePath, iv);
+        
+                Console.WriteLine("File encrypted successfully:");
+                Console.WriteLine("  Encrypted File: " + outputFilePath);
+                Console.WriteLine("  Encrypted AES Key: " + encryptedKeyFilePath);
+                Console.WriteLine("  AES IV: " + ivFilePath);
+            }
+        }
+        else
+        {
+            Console.WriteLine("Usage:");
+            Console.WriteLine("  To generate an AES key: dotnet run -- aes-key");
+            Console.WriteLine("  To encrypt a file: dotnet run -- encrypt <file-path> <public-key.pem> <aes-key.bin>");
+        }
     }
 }

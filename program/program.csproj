@@ -12,11 +12,6 @@
     </None>
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Include="Program.cs" />
-    <Compile Include="AES_keyGen.cs" />
-  </ItemGroup>
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
