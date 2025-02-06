@@ -223,7 +223,6 @@ public static byte[] DecryptFile(
             Console.WriteLine("PlainText: " + resultString);
 
             return finalResult;
-        }
     }
 }
 }
@@ -284,17 +283,6 @@ public class Program
                 Console.WriteLine("  Encrypted AES Key: " + encryptedKeyFilePath);
             }
         }
-        else if (args.Length > 0 && args[0] == "aes-key")
-        {
-            // Generate the AES key
-            byte[] aesKey = AesEncryptor.GenerateAesKey();
-            Console.WriteLine("Generated AES Key (Base64): " + Convert.ToBase64String(aesKey));
-
-            // Save the AES key to a .bin file
-            string aesKeyFilePath = Path.Combine(Directory.GetCurrentDirectory(), "aesKey.bin");
-            File.WriteAllBytes(aesKeyFilePath, aesKey);
-            Console.WriteLine("AES Key saved to: " + aesKeyFilePath);
-        }
         else if (args.Length > 0 && args[0] == "rsa-keys")
         {
             // Generate RSA keys
@@ -332,11 +320,6 @@ public class Program
                 Console.WriteLine("Error during decryption: " + ex.Message);
             }
         }
-        else
-        {
-            Console.WriteLine("Usage:");
-            Console.WriteLine("  To encrypt a file: dotnet run -- encrypt <file-path> <public-key.pem>");
-            Console.WriteLine("  To decrypt a file: dotnet run -- decrypt <encryptedFilePath> <rsaPrivateKeyPath> <encryptedAesKeyPath>");
         }
     }
 }
